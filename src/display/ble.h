@@ -66,13 +66,26 @@ bool ble_connect()
   Serial.print("[BLE] Connecting to ");
   Serial.println(targetDevice->getAddress().toString().c_str());
 
-  pClient = BLEDevice::createClient();
-  if (!pClient->connect(targetDevice))
+  BLEDevice::getScan()->clearResults(); // Free scan memory before connecting
+
+  for (int attempt = 1; attempt <= 3; attempt++)
   {
-    Serial.println("[BLE] ERROR: Connection failed!");
-    return false;
+    Serial.printf("[BLE] Connection attempt %d/3...\n", attempt);
+    pClient = BLEDevice::createClient();
+    delay(1000);
+    if (pClient->connect(targetDevice))
+    {
+      Serial.println("[BLE] Connected to adapter!");
+      return true;
+    }
+    Serial.println("[BLE] Attempt failed, retrying...");
+    delete pClient;
+    pClient = nullptr;
+    delay(2000);
   }
-  Serial.println("[BLE] Connected to adapter!");
+
+  Serial.println("[BLE] ERROR: Connection failed after 3 attempts!");
+  return false;
 
   return true;
 }
