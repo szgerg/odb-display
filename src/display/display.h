@@ -107,7 +107,7 @@ void tft_write_data(int rpm, int speed, int coolant, int fuel)
     tft.println("%");
 }
 
-void tft_write_coolant_high(int speed)
+void tft_write_coolant_high(int temp)
 {
     tft.fillScreen(TFT_BLACK);
     tft.drawBitmap(75, 45, drop, 90, 90, TFT_RED);
