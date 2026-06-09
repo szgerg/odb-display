@@ -32,7 +32,7 @@ bool ble_init(const char *targetAddress)
 
   BLESecurity security;
   security.setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
-  security.setCapability(ESP_IO_CAP_OUT);
+  security.setCapability(ESP_IO_CAP_NONE);
 
   // Scan for BLE devices
   BLEScan *pScan = BLEDevice::getScan();
@@ -42,7 +42,6 @@ bool ble_init(const char *targetAddress)
   Serial.print("[BLE] Devices found: ");
   Serial.println(results->getCount());
 
-  // Look for Vgate iCar Pro by MAC address
   for (int i = 0; i < results->getCount(); i++)
   {
     BLEAdvertisedDevice device = results->getDevice(i);
@@ -62,7 +61,6 @@ bool ble_init(const char *targetAddress)
     }
     Serial.println();
 
-    // Match by MAC address
     if (addr.equalsIgnoreCase(targetAddress))
       targetDevice = new BLEAdvertisedDevice(device);
   }
@@ -84,15 +82,31 @@ bool ble_connect()
     return false;
 
   Serial.println("[BLE] Trying to connect to adapter...");
+  Serial.print("[BLE] Address: ");
+  Serial.println(targetDevice->getAddress().toString().c_str());
+  Serial.print("[BLE] Address type: ");
+  Serial.println(targetDevice->getAddress().getType());
 
   pClient = BLEDevice::createClient();
-  pClient->connect(targetDevice);
-
   pClient->secureConnection();
 
-  Serial.println("[BLE] Connected to adapter!");
+  bool success = pClient->connect(targetDevice);
+  if (success && pClient->isConnected())
+  {
+    Serial.print("[BLE] Connected! MTU: ");
+    Serial.println(pClient->getMTU());
 
-  return true;
+    delay(3000);
+
+    if (pClient->isConnected())
+    {
+      Serial.println("[BLE] Connected to adapter!");
+      return true;
+    }
+    Serial.println("[BLE] Connection lost after pairing!");
+  }
+
+  return false;
 }
 
 bool ble_findService(const char *serviceUUIDStr)
@@ -103,15 +117,9 @@ bool ble_findService(const char *serviceUUIDStr)
     return false;
 
   // Allow time for connection to stabilize after pairing
-  delay(1000);
+  delay(2000);
 
-  // Discover all services/characteristics first
-  Serial.println("[BLE] Discovering attributes...");
-  if (!pClient->discoverAttributes())
-  {
-    Serial.println("[BLE] WARNING: discoverAttributes failed, trying getService anyway...");
-  }
-
+  Serial.println("[BLE] Discovering services...");
   BLEUUID serviceUUID(serviceUUIDStr);
   pService = pClient->getService(serviceUUID);
   if (pService == nullptr)

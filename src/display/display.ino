@@ -7,7 +7,7 @@
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 const char *rxCharUUIDstr = "00002af0-0000-1000-8000-00805f9b34fb";
 const char *txCharUUIDstr = "00002af1-0000-1000-8000-00805f9b34fb";
-const char *address = "41:42:86:9a:5a:d3";
+const char *address = "44:8c:00:ed:32:6a";
 
 volatile bool waiting = false;
 
@@ -98,6 +98,7 @@ void setup()
     return;
 
   wdt_reset();
+  wdt_init(60, true); // Service discovery can take a long time
 
   if (!ble_findService(serviceUUIDstr))
     return;
@@ -121,17 +122,17 @@ void setup()
 
 void loop()
 {
-  // delay(1000);
-  // Serial.println("\n--- Polling ---");
+  delay(1000);
+  Serial.println("\n--- Polling ---");
 
-  // sendCommand("010C"); // Engine RPM
-  // waitForResponse();
-  // sendCommand("010D"); // Vehicle speed
-  // waitForResponse();
-  // sendCommand("0105"); // Coolant temperature
-  // waitForResponse();
-  // sendCommand("012F"); // Fuel level
-  // waitForResponse();
+  sendCommand("010C"); // Engine RPM
+  waitForResponse();
+  sendCommand("010D"); // Vehicle speed
+  waitForResponse();
+  sendCommand("0105"); // Coolant temperature
+  waitForResponse();
+  sendCommand("012F"); // Fuel level
+  waitForResponse();
 
-  // Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
+  Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 }
