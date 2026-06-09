@@ -46,6 +46,8 @@ public:
     }
 };
 
+LGFX tft;
+
 void tft_init()
 {
     tft.init();
@@ -54,12 +56,17 @@ void tft_init()
     tft.setTextSize(2);
 }
 
-void tft_write_center(const char *text)
+void tft_clear()
 {
-    int16_t x1, y1;
-    uint16_t w, h;
-    tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+    tft.fillScreen(TFT_BLACK);
+}
+
+void tft_write_center(const char *text, uint16_t color = TFT_YELLOW)
+{
+    tft_clear();
+    int w = tft.textWidth(text);
+    int h = tft.fontHeight();
     tft.setCursor((tft.width() - w) / 2, 110);
-    tft.setTextColor(TFT_YELLOW);
+    tft.setTextColor(color);
     tft.print(text);
 }

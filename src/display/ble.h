@@ -10,7 +10,7 @@ static BLERemoteCharacteristic *pRemoteChar = nullptr;
 static bool connected = false;
 static String response = "";
 
-bool ble_init(const char *targetAddress = "74:fb:ac:f4:6e:1d")
+bool ble_init(const char *targetAddress = "40:3d:0c:11:f7:16")
 {
   BLEDevice::init("ESP32-OBD");
 

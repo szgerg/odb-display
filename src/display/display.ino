@@ -7,6 +7,7 @@
 const char *serviceUUIDstr = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 const char *rxCharUUIDstr = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 const char *txCharUUIDstr = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const char *address = "40:3d:0c:11:f7:16";
 
 volatile bool waiting = false;
 
@@ -14,8 +15,6 @@ int rpm = 0;
 int speed = 0;
 int coolantTemp = 0;
 int fuelLevel = 0;
-
-LGFX tft;
 
 void waitForResponse()
 {
@@ -82,11 +81,11 @@ void setup()
 
   tft_init();
 
-  tft_write_center("Kapcsolódás...", lgfx::color565(255, 255, 0));
+  tft_write_center("Connecting...", lgfx::color565(255, 255, 0));
 
   wdt_init(30, true);
 
-  if (!ble_init("7a:ed:18:1f:dc:b9"))
+  if (!ble_init(address))
     return;
 
   wdt_reset();
@@ -107,13 +106,13 @@ void setup()
 
   wdt_reset();
 
-  tft_write_center("Kapcsolódás sikeres.");
+  tft_write_center("Success.");
 
   elm_init();
 
   wdt_reset();
 
-  tft_write_center("Adatok lekérése...");
+  tft_write_center("Fetching data...");
 }
 
 void loop()
