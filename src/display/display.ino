@@ -2,6 +2,7 @@
 #include "serial.h"
 #include "ble.h"
 #include "elm327.h"
+#include "display.h"
 
 const char *serviceUUIDstr = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 const char *rxCharUUIDstr = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -13,6 +14,8 @@ int rpm = 0;
 int speed = 0;
 int coolantTemp = 0;
 int fuelLevel = 0;
+
+LGFX tft;
 
 void waitForResponse()
 {
@@ -77,6 +80,10 @@ void setup()
 {
   serial_init();
 
+  tft_init();
+
+  tft_write_center("Kapcsolódás...", lgfx::color565(255, 255, 0));
+
   wdt_init(30, true);
 
   if (!ble_init("7a:ed:18:1f:dc:b9"))
@@ -100,9 +107,13 @@ void setup()
 
   wdt_reset();
 
+  tft_write_center("Kapcsolódás sikeres.");
+
   elm_init();
 
   wdt_reset();
+
+  tft_write_center("Adatok lekérése...");
 }
 
 void loop()
