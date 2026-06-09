@@ -116,7 +116,7 @@ void setup()
 
   wdt_reset();
 
-  wdt_init(10, true);
+  wdt_init(15, true);
   tft_write_center("Fetching data...");
 }
 
@@ -135,4 +135,11 @@ void loop()
   waitForResponse();
 
   Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
+
+  if (coolantTemp >= 98)
+    tft_write_coolant_high(speed);
+  else
+    tft_write_data(rpm, speed, coolantTemp, fuelLevel);
+
+  wdt_reset();
 }

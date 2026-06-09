@@ -1,4 +1,6 @@
 #include <LovyanGFX.hpp>
+#include "icons.h"
+#include "drop.h"
 
 class LGFX : public lgfx::LGFX_Device
 {
@@ -52,7 +54,7 @@ void tft_init()
 {
     tft.init();
     tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_YELLOW);
+    tft.setTextColor(TFT_WHITE);
     tft.setTextSize(2);
 }
 
@@ -61,7 +63,7 @@ void tft_clear()
     tft.fillScreen(TFT_BLACK);
 }
 
-void tft_write_center(const char *text, uint16_t color = TFT_YELLOW)
+void tft_write_center(const char *text, uint16_t color = TFT_WHITE)
 {
     tft_clear();
     int w = tft.textWidth(text);
@@ -69,4 +71,48 @@ void tft_write_center(const char *text, uint16_t color = TFT_YELLOW)
     tft.setCursor((tft.width() - w) / 2, 110);
     tft.setTextColor(color);
     tft.print(text);
+}
+
+void tft_write_data(int rpm, int speed, int coolant, int fuel)
+{
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setTextSize(2);
+    int x = 60;
+    int tx = x + 30;
+
+    int rel = 6;
+    int yofff = 50;
+    int deltaY = 40;
+
+    tft_clear();
+
+    tft.drawBitmap(x, yofff + 0 * deltaY, bitmap_rpm, 24, 24, TFT_BLACK, TFT_BROWN);
+    tft.setCursor(tx, yofff + rel + 0 * deltaY);
+    tft.print(rpm);
+    tft.println("rpm");
+
+    tft.drawBitmap(x, yofff + 1 * deltaY, bitmap_speed, 24, 24, TFT_BLACK, TFT_DARKSLATEBLUE);
+    tft.setCursor(tx, yofff + rel + 1 * deltaY);
+    tft.print(speed);
+    tft.println("km/h");
+
+    tft.drawBitmap(x, yofff + 2 * deltaY, bitmap_coolant, 24, 24, TFT_BLACK, TFT_DARKOLIVEGREEN);
+    tft.setCursor(tx, yofff + rel + 2 * deltaY);
+    tft.print(coolant);
+    tft.println("C");
+
+    tft.drawBitmap(x, yofff + 3 * deltaY, bitmap_fuel, 24, 24, TFT_BLACK, TFT_GREEN);
+    tft.setCursor(tx, yofff + rel + 3 * deltaY);
+    tft.print(fuel);
+    tft.println("%");
+}
+
+void tft_write_coolant_high(int speed)
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.drawBitmap(75, 45, drop, 90, 90, TFT_RED);
+
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    int w = tft.textWidth("Temp HIGH!");
+    tft.drawString("Temp HIGH!", (tft.width() - w) / 2, 170);
 }
