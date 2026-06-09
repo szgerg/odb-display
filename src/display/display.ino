@@ -98,7 +98,6 @@ void setup()
     return;
 
   wdt_reset();
-  wdt_init(10, true);
 
   if (!ble_findService(serviceUUIDstr))
     return;
@@ -116,22 +115,23 @@ void setup()
 
   wdt_reset();
 
+  wdt_init(10, true);
   tft_write_center("Fetching data...");
 }
 
 void loop()
 {
-  delay(1000);
-  Serial.println("\n--- Polling ---");
+  // delay(1000);
+  // Serial.println("\n--- Polling ---");
 
-  sendCommand("010C"); // Engine RPM
-  waitForResponse();
-  sendCommand("010D"); // Vehicle speed
-  waitForResponse();
-  sendCommand("0105"); // Coolant temperature
-  waitForResponse();
-  sendCommand("012F"); // Fuel level
-  waitForResponse();
+  // sendCommand("010C"); // Engine RPM
+  // waitForResponse();
+  // sendCommand("010D"); // Vehicle speed
+  // waitForResponse();
+  // sendCommand("0105"); // Coolant temperature
+  // waitForResponse();
+  // sendCommand("012F"); // Fuel level
+  // waitForResponse();
 
-  Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
+  // Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 }

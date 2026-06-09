@@ -83,45 +83,50 @@ bool ble_connect()
   if (targetDevice == nullptr)
     return false;
 
-  Serial.print("[BLE] Connecting to ");
-  Serial.println(targetDevice->getAddress().toString().c_str());
-  Serial.print("[BLE] Address type: ");
-  Serial.println(targetDevice->getAddress().getType());
+  Serial.println("[BLE] Trying to connect to adapter...");
 
-  BLEDevice::getScan()->clearResults(); // Free scan memory before connecting
+  pClient = BLEDevice::createClient();
+  pClient->connect(targetDevice);
 
-  for (int attempt = 1; attempt <= 3; attempt++)
-  {
-    Serial.printf("[BLE] Connection attempt %d/3...\n", attempt);
-    pClient = BLEDevice::createClient();
-    delay(500);
+  pClient->secureConnection();
 
-    if (pClient->connectTimeout(targetDevice, 10000)) // 10 seconds
-    {
-      Serial.println("[BLE] Connected to adapter!");
-      return true;
-    }
-    Serial.println("[BLE] Attempt failed, retrying...");
-    delete pClient;
-    pClient = nullptr;
-    delay(2000);
-  }
+  Serial.println("[BLE] Connected to adapter!");
 
-  Serial.println("[BLE] ERROR: Connection failed after 3 attempts!");
-  return false;
+  return true;
 }
 
 bool ble_findService(const char *serviceUUIDStr)
 {
+  Serial.println("[BLE] Find Service...");
+
   if (pClient == nullptr || !pClient->isConnected())
     return false;
+
+  // Allow time for connection to stabilize after pairing
+  delay(1000);
+
+  // Discover all services/characteristics first
+  Serial.println("[BLE] Discovering attributes...");
+  if (!pClient->discoverAttributes())
+  {
+    Serial.println("[BLE] WARNING: discoverAttributes failed, trying getService anyway...");
+  }
 
   BLEUUID serviceUUID(serviceUUIDStr);
   pService = pClient->getService(serviceUUID);
   if (pService == nullptr)
   {
-    Serial.println("[BLE] ERROR: Service not found. UUIDs may differ for your adapter.");
-    Serial.println("[BLE] Tip: Use nRF Connect app to find correct UUIDs.");
+    // Try listing all services for debugging
+    Serial.println("[BLE] ERROR: Service not found. Listing discovered services:");
+    auto *services = pClient->getServices();
+    if (services)
+    {
+      for (auto &pair : *services)
+      {
+        Serial.print("[BLE]   Service: ");
+        Serial.println(pair.second->getUUID().toString().c_str());
+      }
+    }
     pClient->disconnect();
     return false;
   }
@@ -131,6 +136,8 @@ bool ble_findService(const char *serviceUUIDStr)
 
 bool ble_findCharacteristics(void (*callback)(BLERemoteCharacteristic *, uint8_t *, size_t, bool), const char *rxCharUUIDStr, const char *txCharUUIDStr)
 {
+  Serial.println("[BLE] Find Characteristics...");
+
   if (pClient == nullptr || !pClient->isConnected())
     return false;
 
