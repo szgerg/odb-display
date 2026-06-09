@@ -7,6 +7,29 @@ const char *serviceUUIDstr = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 const char *rxCharUUIDstr = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 const char *txCharUUIDstr = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
+volatile bool waiting = false;
+
+int rpm = 0;
+int speed = 0;
+int coolantTemp = 0;
+int fuelLevel = 0;
+
+void waitForResponse()
+{
+  while (waiting)
+  {
+    delay(100);
+  }
+
+  wdt_reset();
+}
+
+void sendCommand(const char *cmd)
+{
+  waiting = true;
+  ble_sendCommand(cmd);
+}
+
 static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_t length, bool isNotify)
 {
   Serial.print("[OBD] Notify received, length: ");
@@ -19,6 +42,26 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
       // '>' is the ELM327 prompt, response is complete
       Serial.print("[OBD] Response: ");
       Serial.println(response);
+
+      if (response.startsWith("410C") && response.length() >= 8)
+      {
+        int a = strtol(response.substring(4, 6).c_str(), NULL, 16);
+        int b = strtol(response.substring(6, 8).c_str(), NULL, 16);
+        rpm = (256 * a + b) / 4;
+      }
+      else if (response.startsWith("410D") && response.length() >= 6)
+      {
+        speed = strtol(response.substring(4, 6).c_str(), NULL, 16);
+      }
+      else if (response.startsWith("4105") && response.length() >= 6)
+      {
+        coolantTemp = strtol(response.substring(4, 6).c_str(), NULL, 16) - 40;
+      }
+      else if (response.startsWith("412F") && response.length() >= 6)
+      {
+        fuelLevel = (100 * strtol(response.substring(4, 6).c_str(), NULL, 16)) / 255;
+      }
+
       response = "";
     }
     else if (c != '\r' && c != '\n')
@@ -26,6 +69,8 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
       response += c;
     }
   }
+
+  waiting = false;
 }
 
 void setup()
@@ -55,23 +100,7 @@ void setup()
 
   wdt_reset();
 
-  connected = true;
-  Serial.println("");
-  Serial.println("=============================");
-  Serial.println("  Success");
-  Serial.println("=============================");
-  Serial.println("");
-
-  // Initialize ELM327
   elm_init();
-
-  // Query some OBD data
-  Serial.println("\n[OBD] Querying vehicle data...");
-  ble_sendCommand("0100"); // Supported PIDs [01-20]
-  ble_sendCommand("010C"); // Engine RPM
-  ble_sendCommand("010D"); // Vehicle speed
-  ble_sendCommand("0105"); // Coolant temperature
-  ble_sendCommand("012F"); // Fuel level
 
   wdt_reset();
 }
@@ -80,8 +109,15 @@ void loop()
 {
   delay(1000);
   Serial.println("\n--- Polling ---");
-  ble_sendCommand("010C"); // RPM
-  ble_sendCommand("010D"); // Speed
 
-  wdt_reset();
+  sendCommand("010C"); // Engine RPM
+  waitForResponse();
+  sendCommand("010D"); // Vehicle speed
+  waitForResponse();
+  sendCommand("0105"); // Coolant temperature
+  waitForResponse();
+  sendCommand("012F"); // Fuel level
+  waitForResponse();
+
+  Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 }
