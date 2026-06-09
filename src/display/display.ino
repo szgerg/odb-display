@@ -7,9 +7,6 @@
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 const char *rxCharUUIDstr = "00002af0-0000-1000-8000-00805f9b34fb";
 const char *txCharUUIDstr = "00002af1-0000-1000-8000-00805f9b34fb";
-// const char *serviceUUIDstr = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-// const char *rxCharUUIDstr = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-// const char *txCharUUIDstr = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 const char *address = "41:42:86:9a:5a:d3";
 
 volatile bool waiting = false;
@@ -84,7 +81,8 @@ void setup()
 
   tft_init();
 
-  tft_write_center("Connecting...", lgfx::color565(255, 255, 0));
+  Serial.println("[SYSTEM] Initializing...");
+  tft_write_center("Initializing...");
 
   wdt_init(30, true);
 
@@ -92,6 +90,9 @@ void setup()
     return;
 
   wdt_reset();
+
+  Serial.println("[SYSTEM] Connecting...");
+  tft_write_center("Connecting...");
 
   if (!ble_connect())
     return;

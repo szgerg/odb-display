@@ -1,7 +1,22 @@
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEScan.h>
-#include <BLEClient.h>
+#include <BLEAdvertisedDevice.h>
+
+#define PASSKEY 1234
+
+// Security callback required for Passkey authentication
+class MySecurity : public BLESecurityCallbacks
+{
+  uint32_t onPassKeyRequest() { return PASSKEY; }
+  void onPassKeyNotify(uint32_t pass_key) {}
+  bool onConfirmPIN(uint32_t pass_key) { return true; }
+  bool onSecurityRequest() { return true; }
+  void onAuthenticationComplete(ble_gap_conn_desc *desc)
+  {
+    Serial.println(desc->sec_state.encrypted ? "Auth Success!" : "Auth Failed");
+  }
+};
 
 static BLEAdvertisedDevice *targetDevice = nullptr;
 static BLEClient *pClient = nullptr;
@@ -10,9 +25,14 @@ static BLERemoteCharacteristic *pRemoteChar = nullptr;
 static bool connected = false;
 static String response = "";
 
-bool ble_init(const char *targetAddress = "40:3d:0c:11:f7:16")
+bool ble_init(const char *targetAddress)
 {
   BLEDevice::init("ESP32-OBD");
+  BLEDevice::setSecurityCallbacks(new MySecurity());
+
+  BLESecurity security;
+  security.setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+  security.setCapability(ESP_IO_CAP_OUT);
 
   // Scan for BLE devices
   BLEScan *pScan = BLEDevice::getScan();
@@ -65,6 +85,8 @@ bool ble_connect()
 
   Serial.print("[BLE] Connecting to ");
   Serial.println(targetDevice->getAddress().toString().c_str());
+  Serial.print("[BLE] Address type: ");
+  Serial.println(targetDevice->getAddress().getType());
 
   BLEDevice::getScan()->clearResults(); // Free scan memory before connecting
 
@@ -72,8 +94,9 @@ bool ble_connect()
   {
     Serial.printf("[BLE] Connection attempt %d/3...\n", attempt);
     pClient = BLEDevice::createClient();
-    delay(1000);
-    if (pClient->connect(targetDevice))
+    delay(500);
+
+    if (pClient->connectTimeout(targetDevice, 10000)) // 10 seconds
     {
       Serial.println("[BLE] Connected to adapter!");
       return true;
@@ -86,8 +109,6 @@ bool ble_connect()
 
   Serial.println("[BLE] ERROR: Connection failed after 3 attempts!");
   return false;
-
-  return true;
 }
 
 bool ble_findService(const char *serviceUUIDStr)
