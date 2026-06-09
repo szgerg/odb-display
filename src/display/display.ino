@@ -1,4 +1,7 @@
+#include "watchdog.h"
+#include "serial.h"
 #include "ble.h"
+#include "elm327.h"
 
 const char *serviceUUIDstr = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 const char *rxCharUUIDstr = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -27,21 +30,30 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
 
 void setup()
 {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("[BLE] Starting BLE scan...");
+  serial_init();
+
+  wdt_init(30, true);
 
   if (!ble_init("7a:ed:18:1f:dc:b9"))
     return;
 
+  wdt_reset();
+  wdt_init(10, true);
+
   if (!ble_connect())
     return;
+
+  wdt_reset();
 
   if (!ble_findService(serviceUUIDstr))
     return;
 
+  wdt_reset();
+
   if (!ble_findCharacteristics(notifyCallback, rxCharUUIDstr, txCharUUIDstr))
     return;
+
+  wdt_reset();
 
   connected = true;
   Serial.println("");
@@ -51,14 +63,7 @@ void setup()
   Serial.println("");
 
   // Initialize ELM327
-  delay(500);
-  ble_sendCommand("ATZ"); // Reset ELM327
-  delay(2000);
-  ble_sendCommand("ATE0");  // Echo off
-  ble_sendCommand("ATL0");  // Linefeeds off
-  ble_sendCommand("ATS0");  // Spaces off
-  ble_sendCommand("ATH0");  // Headers off
-  ble_sendCommand("ATSP0"); // Auto-detect protocol
+  elm_init();
 
   // Query some OBD data
   Serial.println("\n[OBD] Querying vehicle data...");
@@ -67,16 +72,16 @@ void setup()
   ble_sendCommand("010D"); // Vehicle speed
   ble_sendCommand("0105"); // Coolant temperature
   ble_sendCommand("012F"); // Fuel level
+
+  wdt_reset();
 }
 
 void loop()
 {
-  if (!connected)
-    return;
-
-  // Periodically query RPM and speed
-  delay(5000);
+  delay(1000);
   Serial.println("\n--- Polling ---");
   ble_sendCommand("010C"); // RPM
   ble_sendCommand("010D"); // Speed
+
+  wdt_reset();
 }
