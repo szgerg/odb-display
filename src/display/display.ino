@@ -5,8 +5,6 @@
 #include "display.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
-const char *rxCharUUIDstr = "00002af0-0000-1000-8000-00805f9b34fb";
-const char *txCharUUIDstr = "00002af1-0000-1000-8000-00805f9b34fb";
 const char *address = "44:8c:00:ed:32:6a";
 
 volatile bool waiting = false;
@@ -105,7 +103,7 @@ void setup()
 
   wdt_reset();
 
-  if (!ble_findCharacteristics(notifyCallback, rxCharUUIDstr, txCharUUIDstr))
+  if (!ble_findCharacteristics(notifyCallback))
     return;
 
   wdt_reset();
@@ -119,6 +117,8 @@ void setup()
   wdt_init(15, true);
   tft_write_center("Fetching data...");
 }
+
+bool clear = true;
 
 void loop()
 {
@@ -137,9 +137,15 @@ void loop()
   Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 
   if (coolantTemp >= 98)
+  {
     tft_write_coolant_high(speed);
+    clear = true;
+  }
   else
-    tft_write_data(rpm, speed, coolantTemp, fuelLevel);
+  {
+    tft_write_data(rpm, speed, coolantTemp, fuelLevel, clear);
+    clear = false;
+  }
 
   wdt_reset();
 }
