@@ -96,7 +96,7 @@ bool ble_connect()
     Serial.print("[BLE] Connected! MTU: ");
     Serial.println(pClient->getMTU());
 
-    delay(3000);
+    // delay(3000);
 
     if (pClient->isConnected())
     {
@@ -117,7 +117,7 @@ bool ble_findService(const char *serviceUUIDStr)
     return false;
 
   // Allow time for connection to stabilize after pairing
-  delay(2000);
+  // delay(2000);
 
   Serial.println("[BLE] Discovering services...");
   BLEUUID serviceUUID(serviceUUIDStr);
@@ -142,7 +142,7 @@ bool ble_findService(const char *serviceUUIDStr)
   return true;
 }
 
-bool ble_findCharacteristics(void (*callback)(BLERemoteCharacteristic *, uint8_t *, size_t, bool), const char *rxCharUUIDStr, const char *txCharUUIDStr)
+bool ble_findCharacteristics(void (*callback)(BLERemoteCharacteristic *, uint8_t *, size_t, bool))
 {
   Serial.println("[BLE] Find Characteristics...");
 
@@ -152,40 +152,56 @@ bool ble_findCharacteristics(void (*callback)(BLERemoteCharacteristic *, uint8_t
   if (pService == nullptr)
     return false;
 
-  BLEUUID rxUUID(rxCharUUIDStr);
-  BLEUUID txUUID(txCharUUIDStr);
+  BLERemoteCharacteristic *pTxChar = nullptr;
 
-  // Find the RX characteristic (for writing commands)
-  pRemoteChar = pService->getCharacteristic(rxUUID);
+  auto *chars = pService->getCharacteristics();
+  if (chars == nullptr)
+  {
+    Serial.println("[BLE] ERROR: No characteristics found.");
+    pClient->disconnect();
+    return false;
+  }
+
+  for (auto &pair : *chars)
+  {
+    BLERemoteCharacteristic *c = pair.second;
+    Serial.print("[BLE]   Characteristic: ");
+    Serial.print(c->getUUID().toString().c_str());
+    Serial.print(" | canWrite: ");
+    Serial.print(c->canWrite() || c->canWriteNoResponse());
+    Serial.print(" | canNotify: ");
+    Serial.println(c->canNotify());
+
+    if ((c->canWrite() || c->canWriteNoResponse()) && pRemoteChar == nullptr)
+    {
+      pRemoteChar = c;
+      Serial.println("[BLE] RX Characteristic found (write)!");
+    }
+
+    if (c->canNotify() && pTxChar == nullptr)
+    {
+      pTxChar = c;
+      Serial.println("[BLE] TX Characteristic found (notify)!");
+    }
+  }
+
   if (pRemoteChar == nullptr)
   {
     Serial.println("[BLE] ERROR: RX Characteristic not found.");
     pClient->disconnect();
     return false;
   }
-  Serial.println("[BLE] RX Characteristic found (write)!");
 
-  // Find the TX characteristic (for receiving notifications)
-  BLERemoteCharacteristic *pTxChar = pService->getCharacteristic(txUUID);
   if (pTxChar == nullptr)
   {
     Serial.println("[BLE] ERROR: TX Characteristic not found.");
     pClient->disconnect();
     return false;
   }
-  Serial.println("[BLE] TX Characteristic found (notify)!");
 
   // Subscribe to notifications on TX characteristic
-  if (pTxChar->canNotify())
-  {
-    pTxChar->registerForNotify(callback);
-    Serial.println("[BLE] Notifications enabled on TX.");
-  }
-  else
-  {
-    Serial.println("[BLE] WARNING: TX characteristic cannot notify!");
-    return false;
-  }
+  pTxChar->registerForNotify(callback);
+  Serial.println("[BLE] Notifications enabled on TX.");
 
   return true;
 }
@@ -194,9 +210,9 @@ void ble_sendCommand(const char *cmd)
 {
   if (pRemoteChar == nullptr)
     return;
+
   String s = String(cmd) + "\r";
   pRemoteChar->writeValue((uint8_t *)s.c_str(), s.length());
   Serial.print("[OBD] Sent: ");
   Serial.println(cmd);
-  delay(1000);
 }
