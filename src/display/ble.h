@@ -88,7 +88,7 @@ bool ble_connect()
   Serial.println(targetDevice->getAddress().getType());
 
   pClient = BLEDevice::createClient();
-  pClient->secureConnection();
+  // pClient->secureConnection();
 
   bool success = pClient->connect(targetDevice);
   if (success && pClient->isConnected())
