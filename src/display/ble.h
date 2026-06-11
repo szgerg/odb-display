@@ -48,10 +48,11 @@ bool ble_init(const char *targetAddress)
 {
   BLEDevice::init("ESP32-OBD");
 
-  // Clear bonding data via NimBLE's ble_store_clear to avoid stale pairing
+  // Clear bonding data to avoid stale pairing
   ble_store_clear();
   Serial.println("[BLE] Cleared bond store.");
 
+  // Security callbacks provide the passkey when the device requests pairing
   // BLEDevice::setSecurityCallbacks(new MySecurity());
 
   // Scan for BLE devices
@@ -71,7 +72,8 @@ bool ble_init(const char *targetAddress)
     Serial.print(name);
     Serial.print(" | Addr: ");
     Serial.print(addr);
-    Serial.println();
+    Serial.print(" | AddrType: ");
+    Serial.println(device.getAddress().getType());
 
     if (addr.equalsIgnoreCase(targetAddress))
       targetDevice = new BLEAdvertisedDevice(device);
@@ -108,7 +110,6 @@ bool ble_connect()
     Serial.print("[BLE] Connection attempt #");
     Serial.println(attempt);
 
-    // Try with the full advertised device (preserves all scan data)
     success = pClient->connect(targetDevice);
 
     if (!success || !pClient->isConnected())

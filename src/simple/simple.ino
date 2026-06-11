@@ -1,8 +1,6 @@
-#include "watchdog.h"
 #include "serial.h"
 #include "ble.h"
 #include "elm327.h"
-#include "display.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 // const char *address = "6c:d4:97:d2:10:e0"; // ecu
@@ -17,12 +15,10 @@ int fuelLevel = 0;
 
 void waitForResponse()
 {
-  while (waiting)
+  if (waiting)
   {
     delay(100);
   }
-
-  wdt_reset();
 }
 
 void sendCommand(const char *cmd)
@@ -31,7 +27,7 @@ void sendCommand(const char *cmd)
   ble_sendCommand(cmd);
 }
 
-static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_t length, bool isNotify)
+static void notifyCallback(NimBLERemoteCharacteristic *pChar, uint8_t *pData, size_t length, bool isNotify)
 {
   Serial.print("[OBD] Notify received, length: ");
   Serial.println(length);
@@ -43,6 +39,11 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
       // '>' is the ELM327 prompt, response is complete
       Serial.print("[OBD] Response: ");
       Serial.println(response);
+
+      // Strip echoed command if present (find the "41" response marker)
+      int idx = response.indexOf("41");
+      if (idx >= 0)
+        response = response.substring(idx);
 
       if (response.startsWith("410C") && response.length() >= 8)
       {
@@ -65,7 +66,7 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
 
       response = "";
     }
-    else if (c != '\r' && c != '\n')
+    else if (c != '\r' && c != '\n' && c != ' ')
     {
       response += c;
     }
@@ -78,46 +79,28 @@ void setup()
 {
   serial_init();
 
-  tft_init();
-
   Serial.println("[SYSTEM] Initializing...");
-  tft_write_center("Initializing...");
-
-  wdt_init(30, true);
 
   if (!ble_init(address))
     return;
 
-  wdt_reset();
-  wdt_init(45, true); // BLE connection + pairing can take longer with real devices
-
   Serial.println("[SYSTEM] Connecting...");
-  tft_write_center("Connecting...");
 
   if (!ble_connect())
     return;
 
-  wdt_reset();
-  wdt_init(60, true); // Service discovery can take a long time
+  Serial.println("[SYSTEM] Finding service...");
 
   if (!ble_findService(serviceUUIDstr))
     return;
 
-  wdt_reset();
+  Serial.println("[SYSTEM] Finding Characteristics...");
 
   if (!ble_findCharacteristics(notifyCallback))
     return;
 
-  wdt_reset();
-
-  tft_write_center("Success.");
-
+  Serial.println("[SYSTEM] ELM init...");
   elm_init();
-
-  wdt_reset();
-
-  wdt_init(15, true);
-  tft_write_center("Fetching data...");
 }
 
 bool clear = true;
@@ -137,17 +120,4 @@ void loop()
   waitForResponse();
 
   Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
-
-  if (coolantTemp >= 98)
-  {
-    tft_write_coolant_high(speed);
-    clear = true;
-  }
-  else
-  {
-    tft_write_data(rpm, speed, coolantTemp, fuelLevel, clear);
-    clear = false;
-  }
-
-  wdt_reset();
 }
