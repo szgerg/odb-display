@@ -1,11 +1,10 @@
 #include "watchdog.h"
 #include "serial.h"
-#include "ble.h"
+#include "nimble.h"
 #include "elm327.h"
 #include "display.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
-// const char *address = "6c:d4:97:d2:10:e0"; // ecu
 const char *address = "41:42:86:9a:5a:d3";
 
 volatile bool waiting = false;
