@@ -6,6 +6,7 @@
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 const char *address = "41:42:86:9a:5a:d3";
+// const char *address = "41:67:80:9a:50:0d";
 
 volatile bool waiting = false;
 
@@ -63,14 +64,13 @@ static void notifyCallback(BLERemoteCharacteristic *pChar, uint8_t *pData, size_
       }
 
       response = "";
+      waiting = false;
     }
     else if (c != '\r' && c != '\n')
     {
       response += c;
     }
   }
-
-  waiting = false;
 }
 
 void setup()
@@ -82,13 +82,16 @@ void setup()
   Serial.println("[SYSTEM] Initializing...");
   tft_write_center("Initializing...");
 
-  wdt_init(30, true);
+  wdt_init(15, true);
+
+  Serial.println("[SYSTEM] Finding device...");
+  tft_write_center("Finding device...");
 
   if (!ble_init(address))
     return;
 
   wdt_reset();
-  wdt_init(45, true); // BLE connection + pairing can take longer with real devices
+  wdt_init(15, true); // BLE connection + pairing can take longer with real devices
 
   Serial.println("[SYSTEM] Connecting...");
   tft_write_center("Connecting...");
@@ -97,7 +100,7 @@ void setup()
     return;
 
   wdt_reset();
-  wdt_init(60, true); // Service discovery can take a long time
+  wdt_init(15, true); // Service discovery can take a long time
 
   if (!ble_findService(serviceUUIDstr))
     return;

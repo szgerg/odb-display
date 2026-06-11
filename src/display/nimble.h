@@ -8,53 +8,55 @@ static NimBLERemoteService *pService = nullptr;
 static NimBLERemoteCharacteristic *pRemoteChar = nullptr;
 static bool connected = false;
 static String response = "";
+static const char *scanTargetAddress = nullptr;
+
+class ScanCallbacks : public NimBLEScanCallbacks
+{
+  void onResult(const NimBLEAdvertisedDevice *device) override
+  {
+    String name = device->haveName() ? device->getName().c_str() : "(no name)";
+    String addr = device->getAddress().toString().c_str();
+    Serial.print("[BLE] Found: ");
+    Serial.print(name);
+    Serial.print(" | Addr: ");
+    Serial.println(addr);
+
+    if (addr.equalsIgnoreCase(scanTargetAddress))
+    {
+      targetDevice = new NimBLEAdvertisedDevice(*device);
+      Serial.println("[BLE] Target device found! Stopping scan.");
+      NimBLEDevice::getScan()->stop();
+    }
+  }
+
+  void onScanEnd(const NimBLEScanResults &results, int reason) override
+  {
+    Serial.print("[BLE] Scan ended, devices found: ");
+    Serial.println(results.getCount());
+  }
+};
+
+static ScanCallbacks scanCallbacks;
 
 bool ble_init(const char *targetAddress)
 {
   NimBLEDevice::init("ESP32-OBD");
 
   Serial.println("[BLE] Starting scan...");
+  scanTargetAddress = targetAddress;
 
   NimBLEScan *pScan = NimBLEDevice::getScan();
+  pScan->setScanCallbacks(&scanCallbacks, false);
   pScan->setActiveScan(true);
   pScan->setInterval(100);
-  pScan->setWindow(99);
-  pScan->start(10);
-  while (pScan->isScanning())
+  pScan->setWindow(100);
+  pScan->start(10000);
+
+  while (true)
   {
-    delay(100);
-  }
-  NimBLEScanResults results = pScan->getResults();
-
-  Serial.print("[BLE] Devices found: ");
-  Serial.println(results.getCount());
-
-  for (int i = 0; i < results.getCount(); i++)
-  {
-    const NimBLEAdvertisedDevice *device = results.getDevice(i);
-    String name = device->haveName() ? device->getName().c_str() : "(no name)";
-    String addr = device->getAddress().toString().c_str();
-    Serial.print("[BLE] Found: ");
-    Serial.print(name);
-    Serial.print(" | Addr: ");
-    Serial.print(addr);
-    Serial.print(" | AddrType: ");
-    Serial.println(device->getAddress().getType());
-
-    if (addr.equalsIgnoreCase(targetAddress))
-    {
-      targetDevice = new NimBLEAdvertisedDevice(*device);
+    if (targetDevice != nullptr)
       break;
-    }
-  }
-  pScan->stop();
-  pScan->clearResults();
-  delay(500);
-
-  if (targetDevice == nullptr)
-  {
-    Serial.println("[BLE] ERROR: OBD adapter not found. Make sure it's powered on (plugged into OBD port).");
-    return false;
+    delay(100);
   }
 
   return true;
