@@ -5,7 +5,7 @@
 #include "display.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
-// const char *address = "41:42:86:9a:5a:d3"; // ecu
+// const char *address = "6f:e6:5b:fc:82:f2"; // ecu
 const char *address = "41:42:86:9a:5a:d3";
 
 volatile bool waiting = false;

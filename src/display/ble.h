@@ -52,13 +52,7 @@ bool ble_init(const char *targetAddress)
   ble_store_clear();
   Serial.println("[BLE] Cleared bond store.");
 
-  BLEDevice::setSecurityCallbacks(new MySecurity());
-
-  BLESecurity security;
-  // Bond + MITM via passkey; no SC requirement for max compatibility with BT 5.3 adapters
-  security.setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
-  // KeyboardOnly: we provide the passkey via onPassKeyRequest callback
-  security.setCapability(ESP_IO_CAP_IN);
+  // BLEDevice::setSecurityCallbacks(new MySecurity());
 
   // Scan for BLE devices
   BLEScan *pScan = BLEDevice::getScan();
@@ -77,20 +71,13 @@ bool ble_init(const char *targetAddress)
     Serial.print(name);
     Serial.print(" | Addr: ");
     Serial.print(addr);
-    if (device.haveServiceUUID())
-    {
-      for (int i = 0; i < device.getServiceUUIDCount(); i++)
-      {
-        Serial.print(" | Service: ");
-        Serial.print(device.getServiceUUID(i).toString().c_str());
-      }
-    }
     Serial.println();
 
     if (addr.equalsIgnoreCase(targetAddress))
       targetDevice = new BLEAdvertisedDevice(device);
   }
   pScan->stop();
+  delay(500); // Allow BLE controller to fully stop scanning before connecting
 
   if (targetDevice == nullptr)
   {
@@ -115,31 +102,24 @@ bool ble_connect()
 
   pClient = BLEDevice::createClient();
 
-  // Vgate iCar Pro 2S uses a Random address (0x41:xx = RPA pattern)
-  // Try BLE_ADDR_RANDOM first, then public as fallback
-  uint8_t addrTypes[] = {
-      BLE_ADDR_PUBLIC,
-      BLE_ADDR_RANDOM,
-      2,3,4,5,6,7,8,9, 10,11,12,13,14,15};
-
   bool success = false;
-  for (int attempt = 0; attempt < 16 && !success; attempt++)
+  for (int attempt = 1; attempt <= 3 && !success; attempt++)
   {
-    uint8_t addrType = addrTypes[attempt];
-
     Serial.print("[BLE] Connection attempt #");
-    Serial.print(attempt + 1);
-    Serial.print(" with  address type: ");
-    Serial.println(addrType);
+    Serial.println(attempt);
 
-    BLEAddress addr(targetDevice->getAddress().toString().c_str(), addrType);
-    success = pClient->connect(addr);
+    // Try with the full advertised device (preserves all scan data)
+    success = pClient->connect(targetDevice);
 
     if (!success || !pClient->isConnected())
     {
-      Serial.println("[BLE] Attempt failed, retrying...");
+      Serial.println("[BLE] Attempt failed.");
       success = false;
-      delay(1000);
+      if (attempt < 3)
+      {
+        Serial.println("[BLE] Waiting before retry...");
+        delay(2000);
+      }
     }
   }
 
@@ -148,19 +128,19 @@ bool ble_connect()
     Serial.print("[BLE] Connected! MTU: ");
     Serial.println(pClient->getMTU());
 
-    // Wait for pairing/bonding to complete
-    delay(2000);
+    // Give time for connection to stabilize
+    delay(1000);
 
     if (pClient->isConnected())
     {
       Serial.println("[BLE] Connected to adapter!");
       return true;
     }
-    Serial.println("[BLE] Connection lost after pairing!");
+    Serial.println("[BLE] Connection lost!");
   }
   else
   {
-    Serial.println("[BLE] Connection failed after all attempts!");
+    Serial.println("[BLE] Connection failed!");
   }
 
   return false;
@@ -172,9 +152,6 @@ bool ble_findService(const char *serviceUUIDStr)
 
   if (pClient == nullptr || !pClient->isConnected())
     return false;
-
-  // Allow time for connection to stabilize after pairing
-  // delay(2000);
 
   Serial.println("[BLE] Discovering services...");
   BLEUUID serviceUUID(serviceUUIDStr);
