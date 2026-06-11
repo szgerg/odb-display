@@ -8,13 +8,32 @@
 // Security callback required for Passkey authentication
 class MySecurity : public BLESecurityCallbacks
 {
-  uint32_t onPassKeyRequest() { return PASSKEY; }
-  void onPassKeyNotify(uint32_t pass_key) {}
-  bool onConfirmPIN(uint32_t pass_key) { return true; }
-  bool onSecurityRequest() { return true; }
+  uint32_t onPassKeyRequest()
+  {
+    Serial.println("[BLE] Passkey requested, providing: " + String(PASSKEY));
+    return PASSKEY;
+  }
+  void onPassKeyNotify(uint32_t pass_key)
+  {
+    Serial.print("[BLE] Passkey notify: ");
+    Serial.println(pass_key);
+  }
+  bool onConfirmPIN(uint32_t pass_key)
+  {
+    Serial.print("[BLE] Confirm PIN: ");
+    Serial.println(pass_key);
+    return true;
+  }
+  bool onSecurityRequest()
+  {
+    Serial.println("[BLE] Security request received");
+    return true;
+  }
   void onAuthenticationComplete(ble_gap_conn_desc *desc)
   {
-    Serial.println(desc->sec_state.encrypted ? "Auth Success!" : "Auth Failed");
+    Serial.println(desc->sec_state.encrypted ? "[BLE] Auth Success!" : "[BLE] Auth Failed");
+    Serial.print("[BLE] Bonded: ");
+    Serial.println(desc->sec_state.bonded);
   }
 };
 
@@ -28,11 +47,18 @@ static String response = "";
 bool ble_init(const char *targetAddress)
 {
   BLEDevice::init("ESP32-OBD");
+
+  // Clear bonding data via NimBLE's ble_store_clear to avoid stale pairing
+  ble_store_clear();
+  Serial.println("[BLE] Cleared bond store.");
+
   BLEDevice::setSecurityCallbacks(new MySecurity());
 
   BLESecurity security;
+  // Bond + MITM via passkey; no SC requirement for max compatibility with BT 5.3 adapters
   security.setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
-  security.setCapability(ESP_IO_CAP_NONE);
+  // KeyboardOnly: we provide the passkey via onPassKeyRequest callback
+  security.setCapability(ESP_IO_CAP_IN);
 
   // Scan for BLE devices
   BLEScan *pScan = BLEDevice::getScan();
@@ -88,15 +114,42 @@ bool ble_connect()
   Serial.println(targetDevice->getAddress().getType());
 
   pClient = BLEDevice::createClient();
-  // pClient->secureConnection();
 
-  bool success = pClient->connect(targetDevice);
+  // Vgate iCar Pro 2S uses a Random address (0x41:xx = RPA pattern)
+  // Try BLE_ADDR_RANDOM first, then public as fallback
+  uint8_t addrTypes[] = {
+      BLE_ADDR_PUBLIC,
+      BLE_ADDR_RANDOM,
+      2,3,4,5,6,7,8,9, 10,11,12,13,14,15};
+
+  bool success = false;
+  for (int attempt = 0; attempt < 16 && !success; attempt++)
+  {
+    uint8_t addrType = addrTypes[attempt];
+
+    Serial.print("[BLE] Connection attempt #");
+    Serial.print(attempt + 1);
+    Serial.print(" with  address type: ");
+    Serial.println(addrType);
+
+    BLEAddress addr(targetDevice->getAddress().toString().c_str(), addrType);
+    success = pClient->connect(addr);
+
+    if (!success || !pClient->isConnected())
+    {
+      Serial.println("[BLE] Attempt failed, retrying...");
+      success = false;
+      delay(1000);
+    }
+  }
+
   if (success && pClient->isConnected())
   {
     Serial.print("[BLE] Connected! MTU: ");
     Serial.println(pClient->getMTU());
 
-    // delay(3000);
+    // Wait for pairing/bonding to complete
+    delay(2000);
 
     if (pClient->isConnected())
     {
@@ -104,6 +157,10 @@ bool ble_connect()
       return true;
     }
     Serial.println("[BLE] Connection lost after pairing!");
+  }
+  else
+  {
+    Serial.println("[BLE] Connection failed after all attempts!");
   }
 
   return false;

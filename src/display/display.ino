@@ -89,6 +89,7 @@ void setup()
     return;
 
   wdt_reset();
+  wdt_init(45, true); // BLE connection + pairing can take longer with real devices
 
   Serial.println("[SYSTEM] Connecting...");
   tft_write_center("Connecting...");
