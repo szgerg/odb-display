@@ -92,8 +92,8 @@ bool ble_connect()
 
     pClient = NimBLEDevice::createClient();
     pClient->setClientCallbacks(new MyClientCallbacks());
-    pClient->setConnectionParams(24, 48, 0, 400); // relaxed: 30-60ms interval, 4s timeout
-    pClient->setConnectTimeout(15);
+    pClient->setConnectionParams(12, 12, 0, 150); // relaxed: 30-60ms interval, 4s timeout
+    pClient->setConnectTimeout(3000);
 
     if (pClient->connect(targetDevice))
     {

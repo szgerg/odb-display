@@ -2,11 +2,17 @@
 #include "serial.h"
 #include "nimble.h"
 #include "elm327.h"
-#include "display.h"
+#include "tft.h"
+
+#include "hourglass.h"
+#include "bluetooth.h"
+#include "drop.h"
+#include "search.h"
+#include "data-transfer.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
-const char *address = "41:42:86:9a:5a:d3";
-// const char *address = "41:67:80:9a:50:0d";
+// const char *address = "41:42:86:9a:5a:d3";
+const char *address = "6c:29:35:1a:7b:f7";
 
 volatile bool waiting = false;
 
@@ -80,27 +86,26 @@ void setup()
   tft_init();
 
   Serial.println("[SYSTEM] Initializing...");
-  tft_write_center("Initializing...");
+  tft_write_icon_text(bitmap_hourglass, "Initializing...", TFT_YELLOW);
+  delay(8000);
 
   wdt_init(15, true);
 
   Serial.println("[SYSTEM] Finding device...");
-  tft_write_center("Finding device...");
+  tft_write_icon_text(bitmap_search, "Finding device...", TFT_MAGENTA);
 
   if (!ble_init(address))
     return;
 
   wdt_reset();
-  wdt_init(15, true); // BLE connection + pairing can take longer with real devices
-
+  
   Serial.println("[SYSTEM] Connecting...");
-  tft_write_center("Connecting...");
+  tft_write_icon_text(bitmap_bluetooth, "Connecting...", TFT_BLUE);
 
   if (!ble_connect())
     return;
 
   wdt_reset();
-  wdt_init(15, true); // Service discovery can take a long time
 
   if (!ble_findService(serviceUUIDstr))
     return;
@@ -112,14 +117,12 @@ void setup()
 
   wdt_reset();
 
-  tft_write_center("Success.");
+  Serial.println("[SYSTEM] Fetching data...");
+  tft_write_icon_text(bitmap_data_transfer, "Fetching data...", TFT_CYAN);
 
   elm_init();
 
   wdt_reset();
-
-  wdt_init(15, true);
-  tft_write_center("Fetching data...");
 }
 
 bool clear = true;
@@ -142,7 +145,7 @@ void loop()
 
   if (coolantTemp >= 98)
   {
-    tft_write_coolant_high(speed);
+    tft_write_icon_text(bitmap_drop, "Temp HIGH!", TFT_RED);
     clear = true;
   }
   else

@@ -1,6 +1,5 @@
 #include <LovyanGFX.hpp>
 #include "icons.h"
-#include "drop.h"
 
 class LGFX : public lgfx::LGFX_Device
 {
@@ -113,12 +112,12 @@ void tft_write_data(int rpm, int speed, int coolant, int fuel, bool clear = fals
     tft.println("%");
 }
 
-void tft_write_coolant_high(int temp)
+void tft_write_icon_text(const uint8_t* icon, char * text, int color)
 {
     tft.fillScreen(TFT_BLACK);
-    tft.drawBitmap(75, 45, drop, 90, 90, TFT_RED);
+    tft.drawBitmap(70, 45, icon, 100, 100, color);
 
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-    int w = tft.textWidth("Temp HIGH!");
-    tft.drawString("Temp HIGH!", (tft.width() - w) / 2, 170);
+    tft.setTextColor(color, TFT_BLACK);
+    int w = tft.textWidth(text);
+    tft.drawString(text, (tft.width() - w) / 2, 170);
 }
