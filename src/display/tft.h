@@ -91,25 +91,25 @@ void tft_write_data(int rpm, int speed, int coolant, int fuel, bool clear = fals
     tft.drawBitmap(x, yofff + 0 * deltaY, bitmap_rpm, 24, 24, TFT_BLACK, TFT_BROWN);
     tft.setCursor(tx, yofff + rel + 0 * deltaY);
     tft.print(rpm);
-    tft.println("rpm");
+    tft.println(" rpm");
 
     tft.fillRect(x, yofff + 1 * deltaY, 200, deltaY, TFT_BLACK);
     tft.drawBitmap(x, yofff + 1 * deltaY, bitmap_speed, 24, 24, TFT_BLACK, TFT_DARKSLATEBLUE);
     tft.setCursor(tx, yofff + rel + 1 * deltaY);
     tft.print(speed);
-    tft.println("km/h");
+    tft.println(" km/h");
 
     tft.fillRect(x, yofff + 2 * deltaY, 200, deltaY, TFT_BLACK);
     tft.drawBitmap(x, yofff + 2 * deltaY, bitmap_coolant, 24, 24, TFT_BLACK, TFT_DARKOLIVEGREEN);
     tft.setCursor(tx, yofff + rel + 2 * deltaY);
     tft.print(coolant);
-    tft.println("C");
+    tft.println(" C");
 
     tft.fillRect(x, yofff + 3 * deltaY, 200, deltaY, TFT_BLACK);
     tft.drawBitmap(x, yofff + 3 * deltaY, bitmap_fuel, 24, 24, TFT_BLACK, TFT_GREEN);
     tft.setCursor(tx, yofff + rel + 3 * deltaY);
     tft.print(fuel);
-    tft.println("%");
+    tft.println(" %");
 }
 
 void tft_write_icon_text(const uint8_t* icon, char * text, int color)
