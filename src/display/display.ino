@@ -3,6 +3,7 @@
 #include "nimble.h"
 #include "elm327.h"
 #include "tft.h"
+#include "beep.h"
 
 #include "hourglass.h"
 #include "bluetooth.h"
@@ -11,8 +12,8 @@
 #include "data-transfer.h"
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
-const char *address = "41:42:86:9a:5a:d3";
-// const char *address = "6c:29:35:1a:7b:f7";
+// const char *address = "41:42:86:9a:5a:d3";
+const char *address = "71:da:b2:71:24:d6";
 
 volatile bool waiting = false;
 
@@ -83,10 +84,17 @@ void setup()
 {
   serial_init();
 
+  
+
   tft_init();
 
   Serial.println("[SYSTEM] Initializing...");
   tft_write_icon_text(bitmap_hourglass, "Initializing...", TFT_YELLOW);
+
+  beep_start();
+  delay(1000);
+  beep_stop();
+
   delay(8000);
 
   wdt_init(15, true);
@@ -143,15 +151,17 @@ void loop()
 
   Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 
-  if (coolantTemp >= 98)
+  if (coolantTemp >= 95)
   {
     tft_write_icon_text(bitmap_drop, "Temp HIGH!", TFT_RED);
     clear = true;
+    beep_start();
   }
   else
   {
     tft_write_data(rpm, speed, coolantTemp, fuelLevel, clear);
     clear = false;
+    beep_stop();
   }
 
   wdt_reset();
