@@ -13,7 +13,7 @@
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 // const char *address = "41:42:86:9a:5a:d3";
-const char *address = "71:da:b2:71:24:d6";
+const char *address = "75:4c:93:ac:e5:cb";
 
 volatile bool waiting = false;
 
