@@ -1,0 +1,28 @@
+Solid Edge Translation to STL
+Date: csütörtök,július 02,2026 10:07de.
+Source File:C:\Users\HVG-SZG\source\odb-display\enclosure\done1.par
+Source System: SOLID EDGE
+
+Hardware:
+Processor: 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+Operating System: Windows 10 Professional
+Installed Memory: 31,72 GB
+
+Software Information:
+Parasolid Version: 38.0.150
+PSBodyshop Version: 38.0.111
+STL Adapter Version: 1700.0.0
+Solid Edge Version: 226.00.01.004 x64
+
+STL Export Options:
+Output File Format:BINARY
+Export Displayed Parts:Off
+structureOption: Monolithic
+Export Units:Millimeter
+Export Tolerance Value:0,001000
+Export Tolerance Type:Fine
+Export Surface Plane Angle Value:0,523599
+
+Translation progress:
+Translation process completed
+Time required to translate:00 : 00 : 01
