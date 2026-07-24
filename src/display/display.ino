@@ -13,7 +13,7 @@
 
 const char *serviceUUIDstr = "000018f0-0000-1000-8000-00805f9b34fb";
 // const char *address = "41:42:86:9a:5a:d3";
-const char *address = "75:4c:93:ac:e5:cb";
+const char *address = "6f:64:81:04:22:70";
 
 volatile bool waiting = false;
 
@@ -151,9 +151,10 @@ void loop()
 
   Serial.printf("[DATA] RPM: %d, Speed: %d km/h, Coolant: %d°C, Fuel: %d%%\n", rpm, speed, coolantTemp, fuelLevel);
 
-  if (coolantTemp >= 95)
+  if (coolantTemp >= 100)
   {
-    tft_write_icon_text(bitmap_drop, "Temp HIGH!", TFT_RED);
+    String str = "HIGH! (" + String(coolantTemp) + " C)";
+    tft_write_icon_text(bitmap_drop, (char*)str.c_str(), TFT_RED);
     clear = true;
     beep_start();
   }

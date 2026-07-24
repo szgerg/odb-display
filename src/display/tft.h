@@ -52,6 +52,7 @@ LGFX tft;
 void tft_init()
 {
     tft.init();
+    tft.setRotation(2);
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_WHITE);
     tft.setTextSize(2);
